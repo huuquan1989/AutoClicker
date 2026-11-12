@@ -71,6 +71,8 @@
     <string name="popup_done">Xong</string>
     <string name="popup_delete">Xóa bước</string>
 
+    <string name="label_marker_scale">Kích thước các chấm trên màn hình: %1$d%%</string>
+    <string name="marker_scale_hint">Kéo thanh trượt để thu nhỏ / phóng to các chấm chạm và vuốt (đổi ngay trên màn hình, giữ nguyên vị trí). Thu nhỏ để đỡ che màn hình.</string>
     <string name="btn_apply">Lưu và hiện thanh điều khiển</string>
 
     <string name="toast_saved">Đã lưu và hiện thanh điều khiển nổi</string>

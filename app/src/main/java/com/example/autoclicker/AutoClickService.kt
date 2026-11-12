@@ -404,7 +404,7 @@ class AutoClickService : AccessibilityService() {
 
     private fun attachMarkerA() {
         val dm = resources.displayMetrics
-        val size = dp(56)
+        val size = mSize(56)
         val a = makeMarker("+", 0xFF2E7D32.toInt())
         val pa = overlayParams(size, size).apply {
             x = if (prefs.ax >= 0) prefs.ax else dm.widthPixels / 2 - size / 2
@@ -427,7 +427,7 @@ class AutoClickService : AccessibilityService() {
 
     private fun attachMarkerB() {
         val dm = resources.displayMetrics
-        val size = dp(56)
+        val size = mSize(56)
         val b = makeMarker("B", 0xFFC62828.toInt())
         val pb = overlayParams(size, size).apply {
             x = if (prefs.bx >= 0) prefs.bx else dm.widthPixels / 2 - size / 2
@@ -540,7 +540,7 @@ class AutoClickService : AccessibilityService() {
     /** Tạo chấm đánh số cho bước thứ [i]: chạm có 1 chấm, vuốt có 2 chấm (xanh dương = đầu, đỏ = cuối). */
     private fun addMarkersFor(i: Int) {
         val s = seqSteps[i]
-        val size = dp(48)
+        val size = mSize(48)
 
         val a = makeMarker("", if (s.swipe) 0xFF1565C0.toInt() else 0xFF2E7D32.toInt(), 15f)
         setMarkerLabel(a, markerLabel(i, s, false))
@@ -585,7 +585,7 @@ class AutoClickService : AccessibilityService() {
 
     private fun setMarkerLabel(v: TextView, label: String) {
         v.text = label
-        v.textSize = if (label.length > 3) 12f else 15f
+        v.textSize = mText(if (label.length > 3) 12f else 15f)
     }
 
     private fun refreshLabels(s: SeqStep) {
@@ -1059,14 +1059,59 @@ class AutoClickService : AccessibilityService() {
             text = label
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            textSize = textSp
+            textSize = mText(textSp)
             alpha = 0.85f
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(color)
-                setStroke(dp(3), Color.WHITE)
+                setStroke(mStroke(), Color.WHITE)
             }
         }
+
+    // ---- Thu phóng các chấm (Prefs.markerScale, %) để đỡ chiếm màn hình
+    private fun markerScale(): Float = prefs.markerScale / 100f
+    private fun mSize(baseDp: Int): Int = (dp(baseDp) * markerScale()).toInt().coerceAtLeast(dp(18))
+    private fun mText(baseSp: Float): Float = (baseSp * markerScale()).coerceAtLeast(8f)
+    private fun mStroke(): Int = (dp(3) * markerScale()).toInt().coerceAtLeast(dp(1))
+
+    /** Đổi kích thước một chấm quanh tâm của nó. */
+    private fun resizeMarker(v: TextView, p: WindowManager.LayoutParams, size: Int, baseSp: Float) {
+        val cx = p.x + p.width / 2f
+        val cy = p.y + p.height / 2f
+        p.width = size
+        p.height = size
+        p.x = (cx - size / 2f).toInt()
+        p.y = (cy - size / 2f).toInt()
+        v.textSize = mText(baseSp)
+        (v.background as? GradientDrawable)?.setStroke(mStroke(), Color.WHITE)
+        try {
+            wm.updateViewLayout(v, p)
+        } catch (e: Exception) {
+            // View đã bị gỡ.
+        }
+    }
+
+    /** Gọi khi đổi tỉ lệ ở màn hình chính: các chấm đổi cỡ ngay, giữ nguyên tâm. */
+    fun applyMarkerScale() {
+        if (!::prefs.isInitialized || !::wm.isInitialized) return
+        if (running || recording) return
+        val size = mSize(56)
+        markerA?.let { v ->
+            markerAParams?.let { p ->
+                resizeMarker(v, p, size, 20f)
+                prefs.ax = p.x.coerceAtLeast(0)
+                prefs.ay = p.y.coerceAtLeast(0)
+            }
+        }
+        markerB?.let { v ->
+            markerBParams?.let { p ->
+                resizeMarker(v, p, size, 20f)
+                prefs.bx = p.x.coerceAtLeast(0)
+                prefs.by = p.y.coerceAtLeast(0)
+            }
+        }
+        if (prefs.mode == Prefs.MODE_SEQ) rebuildSeqMarkers()
+    }
 
     private fun pill(label: String, color: Int): TextView = TextView(this).apply {
         text = label

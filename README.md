@@ -6,6 +6,8 @@ Dùng Dịch vụ trợ năng (Accessibility Service) để gửi thao tác, kh�
 - Android 7.0 (API 24) trở lên
 - Thanh điều khiển nổi: ▶ Bắt đầu / ■ Dừng, đổi kiểu Chạm ↔ Vuốt, ✕ ẩn thanh
 - Chấm **A** (điểm chạm hoặc điểm đầu vuốt) và chấm **B** (điểm cuối vuốt) kéo thả được
+- **Thu phóng chấm**: ở màn hình chính kéo thanh "Kích thước các chấm" (30%–150%) để thu nhỏ/phóng to mọi chấm chạm/vuốt
+  ngay trên màn hình, giữ nguyên tâm; thu nhỏ để đỡ che màn hình.
 - **Macro**: nhấn ● Ghi, thao tác bình thường (chạm, vuốt, nhấn giữ, kể cả chờ giữa các bước), nhấn ■ Xong,
   rồi ▶ Phát để lặp lại đúng chuỗi thao tác đó. Macro được lưu lại cho lần sau.
   - Mỗi lần chỉ ghi một ngón tay. Các nút Back/Home và cử chỉ vuốt từ mép màn hình là của hệ thống nên không ghi được.

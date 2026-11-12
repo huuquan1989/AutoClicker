@@ -14,6 +14,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 
@@ -29,6 +30,8 @@ class MainActivity : Activity() {
     private lateinit var etRepeat: EditText
     private lateinit var etSwipeDuration: EditText
     private lateinit var seqList: LinearLayout
+    private lateinit var sbMarker: SeekBar
+    private lateinit var tvMarker: TextView
 
     // Bản sao dùng để hiển thị danh sách bước; các ô nhập cùng thứ tự với danh sách.
     private var seqSteps = ArrayList<SeqStep>()
@@ -62,6 +65,21 @@ class MainActivity : Activity() {
         etRepeat = findViewById(R.id.etRepeat)
         etSwipeDuration = findViewById(R.id.etSwipeDuration)
         seqList = findViewById(R.id.seqList)
+        sbMarker = findViewById(R.id.sbMarkerScale)
+        tvMarker = findViewById(R.id.tvMarkerScale)
+        sbMarker.max = 120 // 30%..150%
+        sbMarker.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                val pct = progress + 30
+                tvMarker.text = getString(R.string.label_marker_scale, pct)
+                if (fromUser) {
+                    prefs.markerScale = pct
+                    AutoClickService.instance?.applyMarkerScale()
+                }
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
         findViewById<RadioGroup>(R.id.rgMode).setOnCheckedChangeListener { _, _ ->
             if (!loading) modeTouched = true
         }
@@ -121,6 +139,8 @@ class MainActivity : Activity() {
         etInterval.setText(origInterval.toString())
         etRepeat.setText(origRepeat.toString())
         etSwipeDuration.setText(origSwipe.toString())
+        sbMarker.progress = prefs.markerScale - 30
+        tvMarker.text = getString(R.string.label_marker_scale, prefs.markerScale)
     }
 
     private fun saveSettings() {

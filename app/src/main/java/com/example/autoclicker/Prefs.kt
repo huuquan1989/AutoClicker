@@ -65,6 +65,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("schedDaily", false)
         set(v) { sp.edit().putBoolean("schedDaily", v).apply() }
 
+    /** Tỉ lệ kích thước các chấm trên màn hình (%), 30..150, mặc định 100. */
+    var markerScale: Int
+        get() = sp.getInt("markerScale", 100).coerceIn(30, 150)
+        set(v) { sp.edit().putInt("markerScale", v.coerceIn(30, 150)).apply() }
+
     // Vị trí góc trên-trái của cửa sổ nổi, -1 = chưa đặt.
     var ax: Int
         get() = sp.getInt("ax", -1)
