@@ -220,9 +220,8 @@ class AutoClickService : AccessibilityService() {
             setOnClickListener { toggleRec() }
             visibility = View.GONE
         }
-        // Chạm nhanh = đổi chế độ; giữ khoảng 3 giây = mở pop-up cài số lần lặp và thời gian.
         val mode = pill("", 0xFF1565C0.toInt()).apply {
-            pressHold(this, 3000L, { toggleMode() }, { showModeSettingsPopup() })
+            setOnClickListener { toggleMode() }
         }
         // Chạm = hẹn / hủy hẹn theo giờ đã đặt; nhấn giữ = mở pop-up đặt giờ.
         val sched = pill(getString(R.string.bar_sched), 0xFFEF6C00.toInt()).apply {
@@ -412,7 +411,7 @@ class AutoClickService : AccessibilityService() {
             y = if (prefs.ay >= 0) prefs.ay else dm.heightPixels / 2 - size / 2
         }
         wm.addView(a, pa)
-        dragify(a, a, pa) {
+        dragify(a, a, pa, onLongPress = { showModeSettingsPopup(a) }) {
             prefs.ax = pa.x.coerceAtLeast(0)
             prefs.ay = pa.y.coerceAtLeast(0)
         }
@@ -435,7 +434,7 @@ class AutoClickService : AccessibilityService() {
             y = if (prefs.by >= 0) prefs.by else dm.heightPixels / 2 - size / 2 + dp(180)
         }
         wm.addView(b, pb)
-        dragify(b, b, pb) {
+        dragify(b, b, pb, onLongPress = { showModeSettingsPopup(b) }) {
             prefs.bx = pb.x.coerceAtLeast(0)
             prefs.by = pb.y.coerceAtLeast(0)
         }
@@ -1281,52 +1280,8 @@ class AutoClickService : AccessibilityService() {
         applyModeUi()
     }
 
-    /**
-     * Chạm nhanh gọi [onClick]; giữ yên đủ [holdMs] thì gọi [onHold] (kèm rung nhẹ) và không tính là chạm.
-     * Di chuyển ngón tay quá ngưỡng thì huỷ cả hai.
-     */
-    private fun pressHold(v: View, holdMs: Long, onClick: () -> Unit, onHold: () -> Unit) {
-        var fired = false
-        var canceled = false
-        var downX = 0f
-        var downY = 0f
-        val slop = ViewConfiguration.get(this).scaledTouchSlop
-        val holdRunnable = Runnable {
-            if (!canceled) {
-                fired = true
-                v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                onHold()
-            }
-        }
-        v.setOnTouchListener { _, e ->
-            when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    fired = false
-                    canceled = false
-                    downX = e.rawX
-                    downY = e.rawY
-                    handler.postDelayed(holdRunnable, holdMs)
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (!fired && (abs(e.rawX - downX) > slop || abs(e.rawY - downY) > slop)) {
-                        canceled = true
-                        handler.removeCallbacks(holdRunnable)
-                    }
-                }
-                MotionEvent.ACTION_UP -> {
-                    handler.removeCallbacks(holdRunnable)
-                    if (!fired && !canceled) onClick()
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    handler.removeCallbacks(holdRunnable)
-                }
-            }
-            true
-        }
-    }
-
-    /** Pop-up cài số lần lặp và thời gian của chế độ đang chọn (mở bằng cách giữ nút tên chế độ ~3 giây). */
-    private fun showModeSettingsPopup() {
+    /** Pop-up cài số lần lặp và thời gian của chế độ Chạm / Vuốt (mở bằng cách nhấn giữ chấm A hoặc B). */
+    private fun showModeSettingsPopup(anchor: View) {
         if (running || recording) return
         closePopup()
 
@@ -1394,9 +1349,19 @@ class AutoClickService : AccessibilityService() {
         )
         box.addView(buttons)
 
+        // Đặt pop-up cạnh chấm: phía trên nếu chấm ở nửa dưới màn hình, ngược lại phía dưới.
+        val c = centerOf(anchor)
+        val estHeight = if (mode == Prefs.MODE_SWIPE) dp(290) else dp(230)
+        val px = (c.first - width / 2f).toInt()
+            .coerceIn(dp(8), (dm.widthPixels - width - dp(8)).coerceAtLeast(dp(8)))
+        val py = if (c.second > dm.heightPixels / 2f) {
+            (c.second - dp(34) - estHeight).toInt().coerceAtLeast(dp(8))
+        } else {
+            (c.second + dp(38)).toInt()
+        }
         val pp = overlayParams(width, WindowManager.LayoutParams.WRAP_CONTENT).apply {
-            x = (dm.widthPixels - width) / 2
-            y = (dm.heightPixels * 0.22f).toInt()
+            x = px
+            y = py
         }
         wm.addView(box, pp)
         popup = box

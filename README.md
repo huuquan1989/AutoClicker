@@ -26,8 +26,9 @@ Dùng Dịch vụ trợ năng (Accessibility Service) để gửi thao tác, kh�
     tắt ứng dụng (nên tắt tối ưu pin cho app này).
 - **Thu gọn thanh**: chạm vào **≡** để ẩn các nút (chỉ còn nút ≡, các chấm vẫn ở nguyên), chạm lại để mở. Kéo ≡ để di chuyển thanh.
   Không thu gọn được khi đang chạy hoặc ghi; khi bắt đầu chạy (kể cả theo hẹn giờ) thanh tự mở lại để luôn có nút Dừng.
-- **Cài đặt nhanh theo chế độ**: **giữ nút tên chế độ (Chạm / Vuốt / Macro / Chuỗi) khoảng 3 giây** để mở pop-up chỉnh số lần lặp
-  (số vòng với Macro/Chuỗi), thời gian giữa các lần thao tác và thời gian vuốt (chế độ Vuốt). Chạm nhanh vẫn là đổi chế độ.
+- **Cài đặt nhanh ở chế độ Chạm / Vuốt**: **nhấn giữ chấm A (hoặc B)** để mở pop-up chỉnh số lần lặp, thời gian giữa các lần ấn
+  và thời gian vuốt (chế độ Vuốt), giống cách nhấn giữ chấm ở chế độ Chuỗi. Macro không có chấm nên chỉnh số vòng và thời gian nghỉ
+  bằng pop-up của nút ⏰ (nhấn giữ ⏰) hoặc ở màn hình chính.
 - **Dừng nhanh**: nút ■ Dừng phản hồi ngay khi vừa chạm xuống, và có thể nhấn phím tăng/giảm âm lượng để dừng.
   Khoảng nghỉ tối thiểu là 50 ms để hệ thống kịp nhận thao tác của bạn.
 - Tuỳ chỉnh: khoảng nghỉ (ms), số lần lặp (0 = mãi mãi), thời gian mỗi lần vuốt (ms)
