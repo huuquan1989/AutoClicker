@@ -6,7 +6,7 @@
     <string name="status_on">● Dịch vụ trợ năng đang bật</string>
     <string name="status_off">○ Dịch vụ trợ năng chưa bật</string>
 
-    <string name="steps">Cách dùng:\n1. Nhấn “Bật dịch vụ trợ năng”, tìm “Tự Động Chạm” và bật lên.\n2. Một thanh điều khiển nổi sẽ hiện trên màn hình. Nhấn nút xanh dương trên thanh để đổi kiểu: Chạm, Vuốt A→B, Macro hoặc Chuỗi.\n3. Chạm / Vuốt: kéo chấm A (và B) tới đúng vị trí rồi nhấn ▶ Bắt đầu.\n4. Macro: nhấn ● Ghi, thao tác như bình thường trên bất kỳ ứng dụng nào, xong nhấn ■ Xong. Sau đó nhấn ▶ Phát để lặp lại đúng các thao tác đã ghi.\n5. Chuỗi: nhấn ＋ Chạm hoặc ＋ Vuốt để thêm bước 1, 2, 3…, kéo từng chấm tới vị trí, nhấn giữ một chấm để chỉnh số lần ấn và thời gian của bước đó, rồi nhấn ▶ Phát.\n6. Hẹn giờ: nhấn giữ nút ⏰ để đặt giờ:phút:giây theo đồng hồ điện thoại và số lần ấn, rồi nhấn “Hẹn giờ” (hoặc chạm nhanh nút ⏰). Đến đúng giờ, ứng dụng tự chạy theo kiểu đang chọn (Chạm 1 hay nhiều lần, Vuốt, Macro, Chuỗi). Hãy giữ màn hình sáng.\n7. Dừng: nhấn ■ Dừng, hoặc nhấn phím tăng/giảm âm lượng.</string>
+    <string name="steps">Cách dùng:\n1. Nhấn “Bật dịch vụ trợ năng”, tìm “Tự Động Chạm” và bật lên.\n2. Một thanh điều khiển nổi sẽ hiện trên màn hình. Nhấn nút xanh dương trên thanh để đổi kiểu: Chạm, Vuốt A→B, Macro hoặc Chuỗi.\n3. Chạm / Vuốt: kéo chấm A (và B) tới đúng vị trí rồi nhấn ▶ Bắt đầu.\n4. Macro: nhấn ● Ghi, thao tác như bình thường trên bất kỳ ứng dụng nào, xong nhấn ■ Xong. Sau đó nhấn ▶ Phát để lặp lại đúng các thao tác đã ghi.\n5. Chuỗi: nhấn ＋ Chạm hoặc ＋ Vuốt để thêm bước 1, 2, 3…, kéo từng chấm tới vị trí, nhấn giữ một chấm để chỉnh số lần ấn và thời gian của bước đó, rồi nhấn ▶ Phát.\n6. Hẹn giờ: nhấn giữ nút ⏰ để đặt giờ:phút:giây theo đồng hồ điện thoại và số lần ấn, rồi nhấn “Hẹn giờ” (hoặc chạm nhanh nút ⏰). Đến đúng giờ, ứng dụng tự chạy theo kiểu đang chọn (Chạm 1 hay nhiều lần, Vuốt, Macro, Chuỗi). Hãy giữ màn hình sáng.\n7. Dừng: nhấn ■ Dừng, hoặc nhấn phím tăng/giảm âm lượng.\n8. Chạm vào ≡ để thu gọn thanh (chỉ còn nút ≡, chạm lại để mở). Giữ nút tên chế độ (Chạm, Vuốt, Macro, Chuỗi) khoảng 3 giây để chỉnh số lần lặp và thời gian thao tác.</string>
     <string name="restricted_hint">Nếu nút bật dịch vụ bị mờ (Android 13 trở lên, app cài từ file APK): mở “Thông tin ứng dụng”, nhấn dấu ⋮ ở góc trên rồi chọn “Cho phép cài đặt bị hạn chế”.</string>
 
     <string name="btn_accessibility">Bật dịch vụ trợ năng</string>
@@ -30,6 +30,14 @@
     <string name="seq_delay_label">Chờ trước bước này (mili giây)</string>
     <string name="seq_duration_label">Thời gian vuốt của bước này (mili giây)</string>
     <string name="seq_delete">Xóa</string>
+
+    <string name="mode_settings_title">⚙ Cài đặt chế độ: %1$s</string>
+    <string name="ms_repeat_item">Số lần lặp (0 = lặp mãi đến khi dừng)</string>
+    <string name="ms_repeat_round">Số vòng phát (0 = lặp mãi đến khi dừng)</string>
+    <string name="ms_interval_item">Thời gian giữa các lần thao tác</string>
+    <string name="ms_interval_round">Nghỉ giữa các vòng phát</string>
+    <string name="ms_swipe">Thời gian mỗi lần vuốt</string>
+    <string name="toast_collapse_busy">Hãy bấm ■ Xong trước khi thu gọn thanh.</string>
 
     <string name="bar_sched">⏰ Hẹn</string>
     <string name="sched_title">⏰ Hẹn giờ tự động chạy</string>

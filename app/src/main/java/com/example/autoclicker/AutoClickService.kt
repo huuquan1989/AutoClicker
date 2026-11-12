@@ -66,6 +66,9 @@ class AutoClickService : AccessibilityService() {
     private var btnAddTap: TextView? = null
     private var btnAddSwipe: TextView? = null
     private var btnUndo: TextView? = null
+    private var btnClose: TextView? = null
+    private var handleView: TextView? = null
+    private var panelCollapsed = false
 
     // Chấm đánh dấu vị trí (chế độ Chạm / Vuốt)
     private var markerA: TextView? = null
@@ -203,7 +206,7 @@ class AutoClickService : AccessibilityService() {
             text = "≡"
             setTextColor(Color.WHITE)
             textSize = 24f
-            setPadding(dp(6), 0, dp(8), 0)
+            setPadding(dp(6), dp(4), dp(8), dp(4))
         }
         // Nút Bắt đầu/Dừng phản hồi ngay khi chạm xuống, vì khi chạy rất nhanh
         // các thao tác tự động có thể làm hệ thống huỷ cú chạm của bạn trước khi nhả tay.
@@ -217,8 +220,9 @@ class AutoClickService : AccessibilityService() {
             setOnClickListener { toggleRec() }
             visibility = View.GONE
         }
+        // Chạm nhanh = đổi chế độ; giữ khoảng 3 giây = mở pop-up cài số lần lặp và thời gian.
         val mode = pill("", 0xFF1565C0.toInt()).apply {
-            setOnClickListener { toggleMode() }
+            pressHold(this, 3000L, { toggleMode() }, { showModeSettingsPopup() })
         }
         // Chạm = hẹn / hủy hẹn theo giờ đã đặt; nhấn giữ = mở pop-up đặt giờ.
         val sched = pill(getString(R.string.bar_sched), 0xFFEF6C00.toInt()).apply {
@@ -281,7 +285,8 @@ class AutoClickService : AccessibilityService() {
             y = if (prefs.py >= 0) prefs.py else dp(80)
         }
         wm.addView(box, pp)
-        dragify(handle, box, pp) {
+        // Kéo ≡ để di chuyển thanh; chạm một cái để thu gọn / mở lại.
+        dragify(handle, box, pp, onTap = { toggleCollapse() }) {
             prefs.px = pp.x.coerceAtLeast(0)
             prefs.py = pp.y.coerceAtLeast(0)
             clampPanel()
@@ -293,6 +298,8 @@ class AutoClickService : AccessibilityService() {
         btnStart = start
         btnRec = rec
         btnMode = mode
+        btnClose = close
+        handleView = handle
         btnSched = sched
         btnAddTap = addTap
         btnAddSwipe = addSwipe
@@ -317,6 +324,9 @@ class AutoClickService : AccessibilityService() {
         btnStart = null
         btnRec = null
         btnMode = null
+        btnClose = null
+        handleView = null
+        panelCollapsed = false
         btnSched = null
         btnAddTap = null
         btnAddSwipe = null
@@ -339,11 +349,17 @@ class AutoClickService : AccessibilityService() {
         )
         val isSeq = mode == Prefs.MODE_SEQ
         val isMacro = mode == Prefs.MODE_MACRO
-        btnRec?.visibility = if (isMacro) View.VISIBLE else View.GONE
-        btnAddTap?.visibility = if (isSeq) View.VISIBLE else View.GONE
-        btnAddSwipe?.visibility = if (isSeq) View.VISIBLE else View.GONE
-        btnUndo?.visibility = if (isSeq) View.VISIBLE else View.GONE
-        toolsRow?.visibility = if (isSeq || isMacro) View.VISIBLE else View.GONE
+        // Thu gọn: chỉ còn nút ≡, các nút còn lại ẩn đi.
+        val show = !panelCollapsed
+        btnStart?.visibility = if (show) View.VISIBLE else View.GONE
+        btnMode?.visibility = if (show) View.VISIBLE else View.GONE
+        btnSched?.visibility = if (show) View.VISIBLE else View.GONE
+        btnClose?.visibility = if (show) View.VISIBLE else View.GONE
+        btnRec?.visibility = if (show && isMacro) View.VISIBLE else View.GONE
+        btnAddTap?.visibility = if (show && isSeq) View.VISIBLE else View.GONE
+        btnAddSwipe?.visibility = if (show && isSeq) View.VISIBLE else View.GONE
+        btnUndo?.visibility = if (show && isSeq) View.VISIBLE else View.GONE
+        toolsRow?.visibility = if (show && (isSeq || isMacro)) View.VISIBLE else View.GONE
 
         val wantA = mode == Prefs.MODE_TAP || mode == Prefs.MODE_SWIPE
         val wantB = mode == Prefs.MODE_SWIPE
@@ -675,6 +691,11 @@ class AutoClickService : AccessibilityService() {
     /** [initialDelay]: chờ bao lâu trước thao tác đầu (0 khi chạy theo hẹn giờ để đúng giờ nhất). */
     private fun startRunning(initialDelay: Long = 500L) {
         closePopup()
+        if (panelCollapsed) {
+            // Mở lại thanh để luôn có nút Dừng khi đang chạy (vd. chạy theo hẹn giờ lúc đang thu gọn).
+            panelCollapsed = false
+            applyModeUi()
+        }
         when (prefs.mode) {
             Prefs.MODE_MACRO -> {
                 startMacro(initialDelay)
@@ -1075,6 +1096,7 @@ class AutoClickService : AccessibilityService() {
         target: View,
         params: WindowManager.LayoutParams,
         onLongPress: (() -> Unit)? = null,
+        onTap: (() -> Unit)? = null,
         onMoved: () -> Unit
     ) {
         var downX = 0f
@@ -1119,7 +1141,10 @@ class AutoClickService : AccessibilityService() {
                 }
                 MotionEvent.ACTION_UP -> {
                     handler.removeCallbacks(longRunnable)
-                    if (!longFired) onMoved()
+                    if (!longFired) {
+                        if (!moved) onTap?.invoke()
+                        onMoved()
+                    }
                     true
                 }
                 MotionEvent.ACTION_CANCEL -> {
@@ -1164,6 +1189,18 @@ class AutoClickService : AccessibilityService() {
     /** Cập nhật nút ⏰ (đếm ngược) và dòng đồng hồ trong pop-up. */
     private fun updateSchedUi() {
         val now = System.currentTimeMillis()
+        // Khi thu gọn mà đang hẹn giờ, nút ≡ hiện đếm ngược để biết vẫn đang hẹn.
+        handleView?.let { h ->
+            val t = if (panelCollapsed && schedArmed) {
+                "≡ " + fmtRemain(schedAtMs - now)
+            } else {
+                "≡"
+            }
+            if (h.text.toString() != t) {
+                h.text = t
+                h.post { clampPanel() }
+            }
+        }
         btnSched?.let { b ->
             b.text = if (schedArmed) {
                 "⏰ " + fmtRemain(schedAtMs - now)
@@ -1231,6 +1268,138 @@ class AutoClickService : AccessibilityService() {
         } catch (e: Exception) {
             // Thanh đã bị gỡ.
         }
+    }
+
+    /** Chạm ≡: thu gọn thanh còn mỗi nút ≡, chạm lại để mở. Không thu gọn khi đang chạy hoặc ghi. */
+    private fun toggleCollapse() {
+        if (running || recording) {
+            if (recording) toast(getString(R.string.toast_collapse_busy))
+            return
+        }
+        closePopup()
+        panelCollapsed = !panelCollapsed
+        applyModeUi()
+    }
+
+    /**
+     * Chạm nhanh gọi [onClick]; giữ yên đủ [holdMs] thì gọi [onHold] (kèm rung nhẹ) và không tính là chạm.
+     * Di chuyển ngón tay quá ngưỡng thì huỷ cả hai.
+     */
+    private fun pressHold(v: View, holdMs: Long, onClick: () -> Unit, onHold: () -> Unit) {
+        var fired = false
+        var canceled = false
+        var downX = 0f
+        var downY = 0f
+        val slop = ViewConfiguration.get(this).scaledTouchSlop
+        val holdRunnable = Runnable {
+            if (!canceled) {
+                fired = true
+                v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                onHold()
+            }
+        }
+        v.setOnTouchListener { _, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    fired = false
+                    canceled = false
+                    downX = e.rawX
+                    downY = e.rawY
+                    handler.postDelayed(holdRunnable, holdMs)
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!fired && (abs(e.rawX - downX) > slop || abs(e.rawY - downY) > slop)) {
+                        canceled = true
+                        handler.removeCallbacks(holdRunnable)
+                    }
+                }
+                MotionEvent.ACTION_UP -> {
+                    handler.removeCallbacks(holdRunnable)
+                    if (!fired && !canceled) onClick()
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    handler.removeCallbacks(holdRunnable)
+                }
+            }
+            true
+        }
+    }
+
+    /** Pop-up cài số lần lặp và thời gian của chế độ đang chọn (mở bằng cách giữ nút tên chế độ ~3 giây). */
+    private fun showModeSettingsPopup() {
+        if (running || recording) return
+        closePopup()
+
+        val dm = resources.displayMetrics
+        val width = dp(260)
+        val mode = prefs.mode
+        val rounds = mode == Prefs.MODE_MACRO || mode == Prefs.MODE_SEQ
+        val name = getString(
+            when (mode) {
+                Prefs.MODE_SWIPE -> R.string.bar_mode_swipe
+                Prefs.MODE_MACRO -> R.string.bar_mode_macro
+                Prefs.MODE_SEQ -> R.string.bar_mode_seq
+                else -> R.string.bar_mode_tap
+            }
+        )
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(12))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(18).toFloat()
+                setColor(0xF2212121.toInt())
+            }
+        }
+        box.addView(TextView(this).apply {
+            text = getString(R.string.mode_settings_title, name)
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        box.addView(
+            stepperRow(
+                getString(if (rounds) R.string.ms_repeat_round else R.string.ms_repeat_item),
+                prefs.repeatCount.toLong(), 1L, 0L, 9_999L, "×"
+            ) {
+                prefs.repeatCount = it.toInt()
+            }
+        )
+        box.addView(
+            stepperRow(
+                getString(if (rounds) R.string.ms_interval_round else R.string.ms_interval_item),
+                prefs.intervalMs, 50L, 50L, 3_600_000L, " ms"
+            ) {
+                prefs.intervalMs = it
+            }
+        )
+        if (mode == Prefs.MODE_SWIPE) {
+            box.addView(
+                stepperRow(
+                    getString(R.string.ms_swipe), prefs.swipeDurationMs, 50L, 50L, 10_000L, " ms"
+                ) {
+                    prefs.swipeDurationMs = it
+                }
+            )
+        }
+        val buttons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(12), 0, 0)
+        }
+        buttons.addView(
+            pill(getString(R.string.popup_done), 0xFF2E7D32.toInt()).apply {
+                setOnClickListener { closePopup() }
+            }
+        )
+        box.addView(buttons)
+
+        val pp = overlayParams(width, WindowManager.LayoutParams.WRAP_CONTENT).apply {
+            x = (dm.widthPixels - width) / 2
+            y = (dm.heightPixels * 0.22f).toInt()
+        }
+        wm.addView(box, pp)
+        popup = box
     }
 
     private fun toggleSched() {

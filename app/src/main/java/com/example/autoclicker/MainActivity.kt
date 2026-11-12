@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 
@@ -39,6 +40,14 @@ class MainActivity : Activity() {
     private val delayOrig = ArrayList<Long>()
     private val durOrig = ArrayList<Long>()
 
+    // Tương tự cho các cài đặt chung: chỉ ghi lại thứ bạn thực sự đổi ở màn hình này,
+    // để không ghi đè thay đổi vừa làm bằng thanh nổi / pop-up.
+    private var origInterval = -1L
+    private var origRepeat = -1
+    private var origSwipe = -1L
+    private var modeTouched = false
+    private var loading = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -53,6 +62,9 @@ class MainActivity : Activity() {
         etRepeat = findViewById(R.id.etRepeat)
         etSwipeDuration = findViewById(R.id.etSwipeDuration)
         seqList = findViewById(R.id.seqList)
+        findViewById<RadioGroup>(R.id.rgMode).setOnCheckedChangeListener { _, _ ->
+            if (!loading) modeTouched = true
+        }
 
         findViewById<Button>(R.id.btnAccessibility).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -94,30 +106,48 @@ class MainActivity : Activity() {
     }
 
     private fun loadSettings() {
+        loading = true
         when (prefs.mode) {
             Prefs.MODE_SWIPE -> rbSwipe.isChecked = true
             Prefs.MODE_MACRO -> rbMacro.isChecked = true
             Prefs.MODE_SEQ -> rbSeq.isChecked = true
             else -> rbTap.isChecked = true
         }
-        etInterval.setText(prefs.intervalMs.toString())
-        etRepeat.setText(prefs.repeatCount.toString())
-        etSwipeDuration.setText(prefs.swipeDurationMs.toString())
+        loading = false
+        modeTouched = false
+        origInterval = prefs.intervalMs
+        origRepeat = prefs.repeatCount
+        origSwipe = prefs.swipeDurationMs
+        etInterval.setText(origInterval.toString())
+        etRepeat.setText(origRepeat.toString())
+        etSwipeDuration.setText(origSwipe.toString())
     }
 
     private fun saveSettings() {
-        prefs.mode = when {
-            rbSwipe.isChecked -> Prefs.MODE_SWIPE
-            rbMacro.isChecked -> Prefs.MODE_MACRO
-            rbSeq.isChecked -> Prefs.MODE_SEQ
-            else -> Prefs.MODE_TAP
+        if (modeTouched) {
+            prefs.mode = when {
+                rbSwipe.isChecked -> Prefs.MODE_SWIPE
+                rbMacro.isChecked -> Prefs.MODE_MACRO
+                rbSeq.isChecked -> Prefs.MODE_SEQ
+                else -> Prefs.MODE_TAP
+            }
+            modeTouched = false
         }
-        prefs.intervalMs = (etInterval.text.toString().toLongOrNull() ?: 500L)
-            .coerceIn(50L, 3_600_000L)
-        prefs.repeatCount = (etRepeat.text.toString().toIntOrNull() ?: 0)
-            .coerceAtLeast(0)
-        prefs.swipeDurationMs = (etSwipeDuration.text.toString().toLongOrNull() ?: 300L)
-            .coerceIn(50L, 10_000L)
+        val iv = (etInterval.text.toString().toLongOrNull() ?: 500L).coerceIn(50L, 3_600_000L)
+        if (iv != origInterval) {
+            prefs.intervalMs = iv
+            origInterval = iv
+        }
+        val rc = (etRepeat.text.toString().toIntOrNull() ?: 0).coerceAtLeast(0)
+        if (rc != origRepeat) {
+            prefs.repeatCount = rc
+            origRepeat = rc
+        }
+        val sd = (etSwipeDuration.text.toString().toLongOrNull() ?: 300L).coerceIn(50L, 10_000L)
+        if (sd != origSwipe) {
+            prefs.swipeDurationMs = sd
+            origSwipe = sd
+        }
         applyFieldEdits()
         AutoClickService.instance?.syncSeq()
     }
