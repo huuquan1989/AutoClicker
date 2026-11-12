@@ -256,7 +256,15 @@ class AutoClickService : AccessibilityService() {
         row2.addView(addSwipe, childParams())
         row2.addView(undo, childParams())
 
-        box.addView(row1)
+        // Phải khai báo WRAP_CONTENT rõ ràng: mặc định của LinearLayout dọc là MATCH_PARENT,
+        // khiến cả thanh co lại bằng hàng dưới (chỉ có nút Ghi) và hàng trên bị bóp mất nút.
+        box.addView(
+            row1,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
         box.addView(
             row2,
             LinearLayout.LayoutParams(
