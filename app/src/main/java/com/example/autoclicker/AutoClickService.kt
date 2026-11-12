@@ -84,6 +84,7 @@ class AutoClickService : AccessibilityService() {
 
     // Hẹn giờ theo giờ thực của điện thoại
     private var schedArmed = false
+    private var lastSchedLen = 0
     private var schedAtMs = 0L   // thời điểm hẹn
     private var targetMs = 0L    // thời điểm bắt đầu chạy (= giờ hẹn trừ bấm sớm)
     private val schedRunnable = Runnable { schedCheck() }
@@ -275,6 +276,7 @@ class AutoClickService : AccessibilityService() {
         dragify(handle, box, pp) {
             prefs.px = pp.x.coerceAtLeast(0)
             prefs.py = pp.y.coerceAtLeast(0)
+            clampPanel()
         }
 
         panel = box
@@ -358,6 +360,8 @@ class AutoClickService : AccessibilityService() {
 
         if (attached) bringPanelToFront()
         updateUi()
+        // Đổi chế độ làm hiện/ẩn nút nên chiều rộng thanh thay đổi: dịch vào trong nếu cần.
+        clampPanel()
     }
 
     /** Đưa thanh điều khiển lên trên cùng để không bị chấm hay lớp phủ che. */
@@ -1160,6 +1164,11 @@ class AutoClickService : AccessibilityService() {
             }
             (b.background as? GradientDrawable)
                 ?.setColor(if (schedArmed) 0xFFAD1457.toInt() else 0xFFEF6C00.toInt())
+            // Chữ đếm ngược dài/ngắn khác nhau làm thanh rộng hơn: kiểm tra lại vị trí.
+            if (b.text.length != lastSchedLen) {
+                lastSchedLen = b.text.length
+                b.post { clampPanel() }
+            }
         }
         clockView?.let { cv ->
             var t = getString(R.string.sched_clock, fmtClock(now))
@@ -1167,6 +1176,36 @@ class AutoClickService : AccessibilityService() {
                 t += "\n" + getString(R.string.sched_target, fmtClock(schedAtMs), fmtRemain(schedAtMs - now))
             }
             cv.text = t
+        }
+    }
+
+    /**
+     * Giữ thanh điều khiển nằm trọn trong màn hình. Cửa sổ WRAP_CONTENT đặt sát mép phải sẽ bị
+     * cắt bớt chiều rộng, làm mất các nút bên phải (nút đổi chế độ, ⏰, ✕).
+     */
+    private fun clampPanel() {
+        val p = panel ?: return
+        val pp = panelParams ?: return
+        val spec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        p.measure(spec, spec)
+        val w = p.measuredWidth
+        val h = p.measuredHeight
+        p.requestLayout()
+        val dm = resources.displayMetrics
+        val maxX = (dm.widthPixels - w - dp(4)).coerceAtLeast(0)
+        val maxY = (dm.heightPixels - h - dp(4)).coerceAtLeast(0)
+        val nx = pp.x.coerceIn(0, maxX)
+        val ny = pp.y.coerceIn(0, maxY)
+        if (nx != pp.x || ny != pp.y) {
+            pp.x = nx
+            pp.y = ny
+            prefs.px = nx
+            prefs.py = ny
+            try {
+                wm.updateViewLayout(p, pp)
+            } catch (e: Exception) {
+                // Thanh đã bị gỡ.
+            }
         }
     }
 
